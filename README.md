@@ -1,100 +1,78 @@
-// 🛑 Stop Wasting Ad Spend: Auto-Block Irrelevant Search Terms in Google Ads
-// Author: @startwithaidea | https://itallstartedwithaidea.com
+# 🛑 Stop Wasting Ad Spend: Auto-Block Irrelevant Search Terms in Google Ads
 
-function main() {
-  const CAMPAIGN_NAME = 'Your Campaign Name Here';
-  const TRIGGER_WORDS = ['buy', 'buyer', 'buying', 'sell', 'seller', 'selling', 'cheap', 'free', 'discount', 'used', 'second hand', 'refurbished'];
-  const DAYS_TO_ANALYZE = 30;
-  const ADD_AT_CAMPAIGN_LEVEL = true;
+Automatically identify and block irrelevant queries in your Google Ads Search campaigns using exact match negative keywords. This script is perfect for B2B and service-based advertisers who want to eliminate wasted spend from close variants like "buy" or "cheap" that slip through standard negatives.
 
-  Logger.log('Starting negative keyword automation...');
-  Logger.log(`Analyzing ${DAYS_TO_ANALYZE} days of data for campaign: ${CAMPAIGN_NAME}`);
+---
 
-  try {
-    const REPORT = AdsApp.report(`
-      SELECT Query, CampaignName, AdGroupId, AdGroupName, Impressions, Clicks, Cost
-      FROM SEARCH_QUERY_PERFORMANCE_REPORT
-      WHERE CampaignName = '${CAMPAIGN_NAME}'
-        AND Impressions > 0
-      DURING LAST_${DAYS_TO_ANALYZE}_DAYS
-    `);
+## 📌 Why This Matters
+Google’s close variants often allow irrelevant queries through. Negative keywords **do not** block these variants unless added as exact match. That’s where this script comes in.
 
-    const existingNegatives = getExistingNegatives(CAMPAIGN_NAME, ADD_AT_CAMPAIGN_LEVEL);
+---
 
-    let addedCount = 0;
-    let skippedCount = 0;
-    let totalCostSaved = 0;
+## 🚀 What This Script Does
+- Scans your search term reports for specified trigger words (e.g., "cheap", "buy")
+- Checks if they’re already blocked
+- Automatically adds them as **exact match negative keywords** at campaign or ad group level
+- Saves you money and improves campaign relevance
 
-    const rows = REPORT.rows();
-    while (rows.hasNext()) {
-      const row = rows.next();
-      const query = row['Query'].toLowerCase().trim();
-      const adGroupId = row['AdGroupId'];
-      const adGroupName = row['AdGroupName'];
-      const cost = parseFloat(row['Cost']) || 0;
+---
 
-      const containsTriggerWord = TRIGGER_WORDS.some(word => query.includes(word));
-      const isAlreadyNegative = existingNegatives.has(query);
+## 🔧 Configuration
+Inside the script, adjust the following variables:
 
-      if (containsTriggerWord && !isAlreadyNegative) {
-        if (ADD_AT_CAMPAIGN_LEVEL) {
-          addNegativeAtCampaignLevel(CAMPAIGN_NAME, query);
-          Logger.log(`✓ Added campaign negative: [${query}] - Saved $${cost.toFixed(2)}`);
-        } else {
-          addNegativeAtAdGroupLevel(adGroupId, query, adGroupName);
-          Logger.log(`✓ Added ad group negative: [${query}] in ${adGroupName} - Saved $${cost.toFixed(2)}`);
-        }
-        addedCount++;
-        totalCostSaved += cost;
-      } else if (isAlreadyNegative) {
-        skippedCount++;
-      }
-    }
+```javascript
+const CAMPAIGN_NAME = 'Your Campaign Name Here';
+const TRIGGER_WORDS = ['buy', 'cheap', 'sell', 'used'];
+const DAYS_TO_ANALYZE = 30;
+const ADD_AT_CAMPAIGN_LEVEL = true; // Or false for ad group level
+```
 
-    Logger.log(`\n=== SUMMARY ===`);
-    Logger.log(`Negative keywords added: ${addedCount}`);
-    Logger.log(`Duplicates skipped: ${skippedCount}`);
-    Logger.log(`Estimated future cost savings: $${totalCostSaved.toFixed(2)}`);
+---
 
-  } catch (error) {
-    Logger.log(`❌ Error: ${error.message}`);
-  }
-}
+## 📥 How to Use It
 
-function getExistingNegatives(campaignName, campaignLevel) {
-  const existingNegatives = new Set();
-  try {
-    const campaign = AdsApp.campaigns().withCondition(`Name = '${campaignName}'`).get().next();
+### Step 1: Paste Script in Google Ads
+- Go to Google Ads → Tools & Settings → Scripts
+- Click the **+** to add a new script
+- Paste this code
 
-    if (campaignLevel) {
-      const negatives = campaign.negativeKeywords().get();
-      while (negatives.hasNext()) {
-        const neg = negatives.next();
-        existingNegatives.add(neg.getText().replace(/\[|\]/g, '').toLowerCase());
-      }
-    } else {
-      const adGroups = campaign.adGroups().get();
-      while (adGroups.hasNext()) {
-        const adGroup = adGroups.next();
-        const negatives = adGroup.negativeKeywords().get();
-        while (negatives.hasNext()) {
-          const neg = negatives.next();
-          existingNegatives.add(neg.getText().replace(/\[|\]/g, '').toLowerCase());
-        }
-      }
-    }
-  } catch (error) {
-    Logger.log(`Warning: Could not retrieve existing negatives - ${error.message}`);
-  }
-  return existingNegatives;
-}
+### Step 2: Configure Your Campaign Details
+- Update the `CAMPAIGN_NAME`
+- Add relevant `TRIGGER_WORDS`
 
-function addNegativeAtCampaignLevel(campaignName, query) {
-  const campaign = AdsApp.campaigns().withCondition(`Name = '${campaignName}'`).get().next();
-  campaign.createNegativeKeyword(`[${query}]`);
-}
+### Step 3: Preview & Execute
+- Click **Preview** to validate
+- When ready, click **Run**
 
-function addNegativeAtAdGroupLevel(adGroupId, query, adGroupName) {
-  const adGroup = AdsApp.adGroups().withIds([parseInt(adGroupId)]).get().next();
-  adGroup.createNegativeKeyword(`[${query}]`);
-}
+### Step 4: Schedule
+- Automate it weekly or bi-weekly
+- Monitor the logs and refine trigger terms monthly
+
+---
+
+## 📈 Pro Tips
+- Run on high-spend campaigns first
+- Avoid over-blocking: review before adding new trigger words
+- Use logs to estimate cost savings
+
+---
+
+## 💬 Feedback or Issues?
+- Submit an issue or improvement via pull request
+- Follow [@startwithaidea](https://www.reddit.com/user/startwithaidea) for updates and tips
+
+---
+
+## 🧠 Credits
+Built and refined by the PPC community. Enhanced for real-world use cases by [It All Started With A Idea](https://itallstartedwithaidea.com).
+
+---
+
+## 🔒 Permissions Required
+- Read access to `SEARCH_QUERY_PERFORMANCE_REPORT`
+- Permission to manage negative keywords
+
+---
+
+## 📜 License
+MIT – use it, improve it, share it.
