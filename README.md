@@ -1,0 +1,1 @@
+# googleads_negatives_script
